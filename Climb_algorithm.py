@@ -34,6 +34,7 @@ from PyQt5.QtCore import QCoreApplication, QVariant
 from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
                        QgsProcessingAlgorithm,
+                       QgsProcessingUtils,
                        QgsProcessingParameterFeatureSource,
                        QgsProcessingParameterFeatureSink,
                        QgsProcessingParameterNumber,
@@ -41,6 +42,7 @@ from qgis.core import (QgsProcessing,
                        QgsProcessingParameterBand,
                        QgsWkbTypes,
                        QgsProcessingException,
+                       QgsVectorLayer,
                        QgsField)
 import processing
 
@@ -148,9 +150,7 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         # Get the number of features (for the progress bar)
         fcount = source.featureCount()
         # Check for Z values
-        sourcewkbtype = source.wkbType()
-        outputwkbtype = sourcewkbtype
-        hasZ = QgsWkbTypes.hasZ(sourcewkbtype)
+        hasZ = QgsWkbTypes.hasZ(source.wkbType())
         # Get the DEM
         demraster = self.parameterAsRasterLayer(parameters,
                                                 self.DEMFORZ,
@@ -160,20 +160,28 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         thefields.append(QgsField("climb", QVariant.Double))
         thefields.append(QgsField("descent", QVariant.Double))
 
-        if not hasZ and demraster:
+        #if not hasZ and demraster:
+        # If a DEM is provided, use it to extract z values
+        if demraster:
             # Get the raster band with the z value
-            demband = self.parameterAsString(parameters, self.BANDDEM, context)
+            demband = self.parameterAsString(parameters,
+                                             self.BANDDEM,
+                                             context)
+            feedback.pushInfo("Adding Z values from DEM...")
             # Add the z values
-            layerwithz = processing.run("native:setzfromraster", {
-                                  "INPUT": parameters[self.INPUT],
+            withz = processing.run("native:setzfromraster",
+                                 {"INPUT": parameters[self.INPUT],
                                   "RASTER": demraster,
                                   "BAND": demband,
-                                  "OUTPUT": "memory:"})["OUTPUT"]
-            # Modify the wkbtype
-            outputwkbtype = QgsWkbTypes.addZ(source.wkbType())
+                                  "OUTPUT": "memory:"},
+                                 context=context,
+                                 feedback=feedback,
+                                 is_child_algorithm=True)["OUTPUT"]
+            feedback.pushInfo("Z values added.")
+            layerwithz = context.temporaryLayerStore().mapLayer(withz)
+            #layerwithz = QgsProcessingUtils.mapLayerFromString(withz, context)
         else:
             layerwithz = source
-
         # Retrieve the feature sink. The 'dest_id' variable is used
         # to uniquely identify the feature sink, and must be included
         # in the dictionary returned by the processAlgorithm
@@ -181,7 +189,7 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         (sink, dest_id) = self.parameterAsSink(parameters,
                                                self.OUTPUT,
                                                context, thefields,
-                                               outputwkbtype,
+                                               layerwithz.wkbType(),
                                                source.sourceCrs())
 
         # get features from source (with z values)
@@ -231,6 +239,15 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         return {self.OUTPUT: dest_id, self.TOTALCLIMB: totalclimb,
                 self.TOTALDESCENT: totaldescent}
 
+    def shortHelpString(self):
+        return("Calculates the total climb and descent along lines "
+               "using Z values.<br>"
+               "Z values can be provided by the line geometries or "
+               "by a DEM (using the <i>Drape (set z-value from "
+               "raster)</i> algorithm).<br>"
+               "If a DEM is specified, Z values will be taken from "
+               "the DEM and not the line layer.")
+
     def name(self):
         """
         Returns the algorithm name, used for identifying the
@@ -251,7 +268,7 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         Returns the name of the group this algorithm belongs to.
         This string should be localised.
         """
-        return self.tr(self.groupId())
+        return self.tr('Vector analysis')
 
     def groupId(self):
         """
@@ -260,7 +277,8 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         Group id should contain lowercase alphanumeric characters
         only and no spaces or other formatting characters.
         """
-        return 'Climb'
+        # return 'Climb'
+        return 'vectoranalysis'
 
     def tr(self, string):
         return QCoreApplication.translate('Processing', string)

@@ -1,11 +1,4 @@
-# This file contains metadata for your plugin. Since 
-# version 2.0 of QGIS this is the proper way to supply 
-# information about a plugin.
-
-# This file should be included when you package your plugin.
-
 # Mandatory items:
-
 [general]
 name=Climb
 qgisMinimumVersion=3.0
@@ -13,27 +6,21 @@ description=Calculate climb along a line
 version=0.1
 author=Håvard Tveite, NMBU
 email=havard.tveite@nmbu.no
-
 about=Calculate the total climb along a polyline.
-
 tracker=https://github.com/havatv/qgisclimbplugin/issues
 repository=https://github.com/havatv/qgisclimbplugin
 # End of mandatory metadata
 
 # Recommended items:
-
-# Uncomment the following line and add your changelog:
 changelog=0.1 First implementation
 
 # Tags are comma separated with spaces allowed
-tags=python,vector,dtm,dem,climb,polyline,line
-
-homepage=http://arken.nmbu.no/~havatv/gis/qgisplugins/Climb
+tags=python,vector,dtm,dem,climb,descent,polyline,line
+#homepage=http://arken.nmbu.no/~havatv/gis/qgisplugins/Climb
 category=Analysis
 icon=climb.png
 # experimental flag
-experimental=True
-
+experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
