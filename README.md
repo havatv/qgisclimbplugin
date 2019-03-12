@@ -4,7 +4,7 @@
 <i>Climb</i> is a QGIS Processing Plugin that calculates the total
 climb (and descent) along the lines of a line layer based on Z values
 taken from the lines or extracted from a supplied DEM.
-The algorithm is placed under <i>Vector analysis</i> in the
+The algorithm is placed under <i>Climb-> Vector analysis</i> in the
 <i>Processing Toolbox</i>.
 
 <h2>Parameters</h2>
