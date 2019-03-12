@@ -43,7 +43,9 @@ from qgis.core import (QgsProcessing,
                        QgsWkbTypes,
                        QgsProcessingException,
                        QgsVectorLayer,
+                       QgsFields,
                        QgsField)
+from qgis.utils import Qgis
 import processing
 
 
@@ -64,6 +66,8 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
     BANDDEM = 'BANDDEM'
     TOTALCLIMB = 'TOTALCLIMB'
     TOTALDESCENT = 'TOTALDESCENT'
+    CLIMBATTRIBUTE = 'climb'
+    DESCENTATTRIBUTE = 'descent'
 
     # Override checking of parameters
     def checkParameterValues(self, parameters, context):
@@ -72,13 +76,23 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         # Check for Z values
         hasZ = QgsWkbTypes.hasZ(source.wkbType())
         if not hasZ:
+            if Qgis.QGIS_VERSION_INT < 30405:
+                return [False, 'The line layer has no Z values, ' +
+                        'so a DEM is needed, but extracting Z ' +
+                        'values from the DEM requires QGIS ' +
+                        '3.4.5 or later. Your QGIS version is ' +
+                        Qgis.QGIS_VERSION +
+                        ' - sorry about that!']
             demraster = self.parameterAsRasterLayer(parameters,
                                             self.DEMFORZ, context)
             if not demraster:
-                return [False, 'The line layer has no z values - ' +
+                return [False, 'The line layer has no Z values - ' +
                         'a DEM is needed']
             else:
                 return [True, 'OK']
+        else:
+            return [True, 'OK']
+
 
     def initAlgorithm(self, config):
         """
@@ -91,16 +105,8 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
-                self.tr('Input layer'),
+                self.tr('Input (line) layer'),
                 [QgsProcessing.TypeVectorLine]
-            )
-        )
-
-        # We add a feature sink in which to store our processed features.
-        self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT,
-                self.tr('Output layer')
             )
         )
 
@@ -123,23 +129,31 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-        # Output number for total climb
+        # We add a feature sink in which to store our processed features.
         self.addParameter(
-            QgsProcessingParameterNumber(
-                self.TOTALCLIMB,
-                self.tr('Total climb'),
-                type=QgsProcessingParameterNumber.Double
+            QgsProcessingParameterFeatureSink(
+                self.OUTPUT,
+                self.tr('Climb layer')
             )
         )
 
-        # Output number for total descent
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.TOTALDESCENT,
-                self.tr('Total descent'),
-                type=QgsProcessingParameterNumber.Double
-            )
-        )
+        # # Output number for total climb
+        # self.addParameter(
+        #     QgsProcessingParameterNumber(
+        #         self.TOTALCLIMB,
+        #         self.tr('Total climb'),
+        #         type=QgsProcessingParameterNumber.Double
+        #     )
+        # )
+
+        # # Output number for total descent
+        # self.addParameter(
+        #     QgsProcessingParameterNumber(
+        #         self.TOTALDESCENT,
+        #         self.tr('Total descent'),
+        #         type=QgsProcessingParameterNumber.Double
+        #     )
+        # )
 
     def processAlgorithm(self, parameters, context, feedback):
         """
@@ -155,12 +169,31 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         demraster = self.parameterAsRasterLayer(parameters,
                                                 self.DEMFORZ,
                                                 context)
-        # Create fields for climb and descent
-        thefields = source.fields()
-        thefields.append(QgsField("climb", QVariant.Double))
-        thefields.append(QgsField("descent", QVariant.Double))
+        # Add fields to the output layer
+        # Add fields from the input layer
+        thefields = QgsFields()
+        climbindex = -1
+        descentindex = -1
+        fieldnumber = 0
+        # Skip fields with names that are equal to the generated ones
+        for field in source.fields():
+            if str(field.name()) == str(self.CLIMBATTRIBUTE):
+                feedback.pushInfo("Warning: existing " +
+                                  str(self.CLIMBATTRIBUTE) +
+                                  " attribute found and removed")
+                climbindex = fieldnumber
+            elif str(field.name()) == str(self.DESCENTATTRIBUTE):
+                feedback.pushInfo("Warning: existing " +
+                                  str(self.DESCENTATTRIBUTE) +
+                                  " attribute found and removed")
+                descentindex = fieldnumber
+            else:
+                thefields.append(field)
+            fieldnumber = fieldnumber + 1
+        # Create new fields for climb and descent
+        thefields.append(QgsField(self.CLIMBATTRIBUTE, QVariant.Double))
+        thefields.append(QgsField(self.DESCENTATTRIBUTE, QVariant.Double))
 
-        #if not hasZ and demraster:
         # If a DEM is provided, use it to extract z values
         if demraster:
             # Get the raster band with the z value
@@ -169,6 +202,7 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                                              context)
             feedback.pushInfo("Adding Z values from DEM...")
             # Add the z values
+            # if Qgis.QGIS_VERSION_INT >= 30505:  # is_child_algorithm
             withz = processing.run("native:setzfromraster",
                                  {"INPUT": parameters[self.INPUT],
                                   "RASTER": demraster,
@@ -177,9 +211,20 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                                  context=context,
                                  feedback=feedback,
                                  is_child_algorithm=True)["OUTPUT"]
+            # else:
+            #     withz = processing.run("native:setzfromraster",
+            #                      {"INPUT": parameters[self.INPUT],
+            #                       "RASTER": demraster,
+            #                       "BAND": demband,
+            #                       "OUTPUT": "memory:"},
+            #                      context=context,
+            #                      feedback=feedback,
+            #                      ......... )["OUTPUT"]
+
             feedback.pushInfo("Z values added.")
             layerwithz = context.temporaryLayerStore().mapLayer(withz)
-            #layerwithz = QgsProcessingUtils.mapLayerFromString(withz, context)
+            # layerwithz = QgsProcessingUtils.mapLayerFromString(
+            #                                         withz, context)
         else:
             layerwithz = source
         # Retrieve the feature sink. The 'dest_id' variable is used
@@ -191,7 +236,6 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                                                context, thefields,
                                                layerwithz.wkbType(),
                                                source.sourceCrs())
-
         # get features from source (with z values)
         features = layerwithz.getFeatures()
         totalclimb = 0
@@ -211,7 +255,7 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                     zval = v.z()
                     # Check if we do not have a valid z value
                     if math.isnan(zval):
-                        feedback.pushInfo("Missing z value")
+                        feedback.pushInfo("Missing Z value")
                         continue
                     if first:
                         prevz = zval
@@ -225,12 +269,20 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                     prevz = zval
                 totalclimb = totalclimb + climb
                 totaldescent = totaldescent + descent
+            # Set the attribute values
             attrs = feature.attributes()
-            feature.setAttributes(attrs + [climb, descent])
-
+            outattrs = []
+            attrindex = 0
+            for attr in attrs:
+                # Skip attributes from the input layer that had names
+                # that were equal to the generated ones
+                if not (attrindex == climbindex or
+                        attrindex == descentindex):
+                    outattrs.append(attr)
+                attrindex = attrindex + 1
+            feature.setAttributes(outattrs + [climb, descent])
             # Add a feature to the sink
             sink.addFeature(feature, QgsFeatureSink.FastInsert)
-
             # Update the progress bar
             if fcount > 0:
                 feedback.setProgress(int(100 * current / fcount))
@@ -240,13 +292,24 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                 self.TOTALDESCENT: totaldescent}
 
     def shortHelpString(self):
-        return("Calculates the total climb and descent along lines "
-               "using Z values.<br>"
+        return("The total climb and descent along the line "
+               "geometries of the input line layer are calculated "
+               "using the Z values for the points making up "
+               "the lines.<br> "
                "Z values can be provided by the line geometries or "
-               "by a DEM (using the <i>Drape (set z-value from "
-               "raster)</i> algorithm).<br>"
+               "a DEM (by using the <i>Drape (set z-value from "
+               "raster)</i> algorithm to assign Z values to the "
+               "points that make up the lines).<br> "
                "If a DEM is specified, Z values will be taken from "
-               "the DEM and not the line layer.")
+               "the DEM and not the line layer.<br>"
+               "The output layer (OUTPUT) has two extra fields "
+               "(<i>climb</i> and <i>descent</i>) "
+               "that shall contain the total climb "
+               "and the total descent for each line geometry. "
+               "If these fields exist in the input layer the "
+               "original fields will be removed.<br>"
+               "The layer totals are returned in the TOTALCLIMB and "
+               "TOTALDESCENT output parameters.")
 
     def name(self):
         """

@@ -25,8 +25,7 @@
 
 #Add iso code for any locales you want to support here (space separated)
 # default is no locales
-# LOCALES = af
-LOCALES =
+LOCALES = "nn nb"
 
 # If locales are enabled, set the name of the lrelease binary on your system. If
 # you have trouble compiling the translations, you may have to specify the full path to
@@ -103,7 +102,7 @@ test: compile transcompile
 	@echo "----------------------"
 
 ##deploy: compile doc transcompile
-deploy: doc transcompile
+deploy: transcompile
 	@echo
 	@echo "------------------------------------------"
 	@echo "Deploying plugin to your qgis directory."
@@ -117,7 +116,7 @@ deploy: doc transcompile
 	#cp -vf $(COMPILED_RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vfr i18n $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help
+	#cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help
 	# Copy extra directories if any
 	#(foreach EXTRA_DIR,(EXTRA_DIRS), cp -R (EXTRA_DIR) (HOME)/(QGISDIR)/python/plugins/(PLUGINNAME)/;)
 

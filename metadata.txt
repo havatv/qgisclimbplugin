@@ -1,26 +1,27 @@
 # Mandatory items:
 [general]
 name=Climb
-qgisMinimumVersion=3.0
-description=Calculate climb along a line
-version=0.1
+qgisMinimumVersion=3.4
+description=Calculate climb and descent for a line dataset.
+version=1.0.1
 author=Håvard Tveite, NMBU
 email=havard.tveite@nmbu.no
-about=Calculate the total climb along a polyline.
+about=Processing algorithm that returns an output line layer containing the total climb and descent for each polyline of the input line dataset based on the Z values of the points making up the lines.  The Z values for the points can be taken from a user specified DEM (requires QGIS >= 3.4.5).  The grand total climb and descent for all the lines in the input dataset are also provided as output parameters.
 tracker=https://github.com/havatv/qgisclimbplugin/issues
 repository=https://github.com/havatv/qgisclimbplugin
 # End of mandatory metadata
 
 # Recommended items:
-changelog=0.1 First implementation
+changelog=1.0.1 (2019-03)
+    - Avoid crash for QGIS 3.4 versions earlier than 3.4.5
+    1.0
+    - Initial version
 
-# Tags are comma separated with spaces allowed
-tags=python,vector,dtm,dem,climb,descent,polyline,line
+tags=vector,dtm,dem,climb,descent,polyline,line
 #homepage=http://arken.nmbu.no/~havatv/gis/qgisplugins/Climb
+homepage=https://github.com/havatv/qgisclimbplugin
 category=Analysis
 icon=climb.png
-# experimental flag
 experimental=False
-# deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
