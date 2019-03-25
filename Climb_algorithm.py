@@ -34,15 +34,15 @@ from PyQt5.QtCore import QCoreApplication, QVariant
 from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
                        QgsProcessingAlgorithm,
-                       QgsProcessingUtils,
+                       #QgsProcessingUtils,
                        QgsProcessingParameterFeatureSource,
                        QgsProcessingParameterFeatureSink,
-                       QgsProcessingParameterNumber,
                        QgsProcessingParameterRasterLayer,
                        QgsProcessingParameterBand,
+                       QgsProcessingOutputNumber,
                        QgsWkbTypes,
-                       QgsProcessingException,
-                       QgsVectorLayer,
+                       # QgsProcessingException,
+                       # QgsVectorLayer,
                        QgsFields,
                        QgsField)
 from qgis.utils import Qgis
@@ -137,23 +137,21 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-        # # Output number for total climb
-        # self.addParameter(
-        #     QgsProcessingParameterNumber(
-        #         self.TOTALCLIMB,
-        #         self.tr('Total climb'),
-        #         type=QgsProcessingParameterNumber.Double
-        #     )
-        # )
+        # Output number for total climb
+        self.addOutput(
+            QgsProcessingOutputNumber(
+                self.TOTALCLIMB,
+                self.tr('Total climb')
+            )
+        )
 
-        # # Output number for total descent
-        # self.addParameter(
-        #     QgsProcessingParameterNumber(
-        #         self.TOTALDESCENT,
-        #         self.tr('Total descent'),
-        #         type=QgsProcessingParameterNumber.Double
-        #     )
-        # )
+        # Output number for total descent
+        self.addOutput(
+            QgsProcessingOutputNumber(
+                self.TOTALDESCENT,
+                self.tr('Total descent')
+            )
+        )
 
     def processAlgorithm(self, parameters, context, feedback):
         """
