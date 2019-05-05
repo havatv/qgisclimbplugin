@@ -66,8 +66,12 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
     BANDDEM = 'BANDDEM'
     TOTALCLIMB = 'TOTALCLIMB'
     TOTALDESCENT = 'TOTALDESCENT'
+    MINELEVATION = 'MINELEVATION'
+    MAXELEVATION = 'MAXELEVATION'
     CLIMBATTRIBUTE = 'climb'
     DESCENTATTRIBUTE = 'descent'
+    MINELEVATTRIBUTE = 'minelev'
+    MAXELEVATTRIBUTE = 'maxelev'
 
     # Override checking of parameters
     def checkParameterValues(self, parameters, context):
@@ -153,6 +157,22 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
+        # Output number for minimum elevation
+        self.addOutput(
+            QgsProcessingOutputNumber(
+                self.MINELEVATION,
+                self.tr('Minimum elevation')
+            )
+        )
+
+        # Output number for maximum elevation
+        self.addOutput(
+            QgsProcessingOutputNumber(
+                self.MAXELEVATION,
+                self.tr('Maximum elevation')
+            )
+        )
+
     def processAlgorithm(self, parameters, context, feedback):
         """
         Here is where the processing itself takes place.
@@ -191,6 +211,8 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         # Create new fields for climb and descent
         thefields.append(QgsField(self.CLIMBATTRIBUTE, QVariant.Double))
         thefields.append(QgsField(self.DESCENTATTRIBUTE, QVariant.Double))
+        thefields.append(QgsField(self.MINELEVATTRIBUTE, QVariant.Double))
+        thefields.append(QgsField(self.MAXELEVATTRIBUTE, QVariant.Double))
 
         # If a DEM is provided, use it to extract z values
         if demraster:
@@ -238,12 +260,17 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         features = layerwithz.getFeatures()
         totalclimb = 0
         totaldescent = 0
+        minelevation = 0
+        maxelevation = 0
+        firstfeature = True
         for current, feature in enumerate(features):
             # Stop the algorithm if cancelled
             if feedback.isCanceled():
                 break
             climb = 0
             descent = 0
+            minelev = 0
+            maxelev = 0
             # In case of multigeometries we need to do the parts
             for part in feature.geometry().constParts():
                 # Calculate the climb
@@ -257,6 +284,8 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                         continue
                     if first:
                         prevz = zval
+                        minelev = zval
+                        maxelev = zval
                         first = False
                     else:
                         diff = zval - prevz
@@ -264,6 +293,10 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                             climb = climb + diff
                         else:
                             descent = descent - diff
+                        if minelev > zval
+                            minelev = zval
+                        if maxelev < zval
+                            maxelev = zval
                     prevz = zval
                 totalclimb = totalclimb + climb
                 totaldescent = totaldescent + descent
@@ -278,16 +311,27 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                         attrindex == descentindex):
                     outattrs.append(attr)
                 attrindex = attrindex + 1
-            feature.setAttributes(outattrs + [climb, descent])
+            #feature.setAttributes(outattrs + [climb, descent])
+            feature.setAttributes(outattrs + [climb, descent, minelev, maxelev])
             # Add a feature to the sink
             sink.addFeature(feature, QgsFeatureSink.FastInsert)
+            if firstfeature:
+                minelevation = minelev
+                maxelevation = maxelev
+                firstfeature = False
+            else:
+                if minelevation > minelev
+                    minelevation = minelev
+                if maxelevation < maxelev
+                    maxelevation = maxelev
             # Update the progress bar
             if fcount > 0:
                 feedback.setProgress(int(100 * current / fcount))
-
         # Return the results
         return {self.OUTPUT: dest_id, self.TOTALCLIMB: totalclimb,
-                self.TOTALDESCENT: totaldescent}
+                self.TOTALDESCENT: totaldescent,
+                self.MINELEVATION: minelevation,
+                self.MAXELEVATION: maxelevation}
 
     def shortHelpString(self):
         return("The total climb and descent along the line "
@@ -300,14 +344,18 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                "points that make up the lines).<br> "
                "If a DEM is specified, Z values will be taken from "
                "the DEM and not the line layer.<br>"
-               "The output layer (OUTPUT) has two extra fields "
+               "The output layer (OUTPUT) has extra fields "
                "(<i>climb</i> and <i>descent</i>) "
                "that shall contain the total climb "
-               "and the total descent for each line geometry. "
+               "and the total descent for each line geometry, "
+               "and extra fields (<i>minelev</i> and <i>maxelev</i>) "
+               "that shall contain the minimum and maximum elevation "
+               "of each line geometry."
                "If these fields exist in the input layer the "
                "original fields will be removed.<br>"
-               "The layer totals are returned in the TOTALCLIMB and "
-               "TOTALDESCENT output parameters.")
+               "The layer totals are returned in the TOTALCLIMB, "
+               "TOTALDESCENT, MINELEVATION and MAXELEVATION output "
+               "parameters.")
 
     def name(self):
         """
