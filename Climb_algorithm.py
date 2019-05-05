@@ -293,9 +293,9 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                             climb = climb + diff
                         else:
                             descent = descent - diff
-                        if minelev > zval
+                        if minelev > zval:
                             minelev = zval
-                        if maxelev < zval
+                        if maxelev < zval:
                             maxelev = zval
                     prevz = zval
                 totalclimb = totalclimb + climb
@@ -320,9 +320,9 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                 maxelevation = maxelev
                 firstfeature = False
             else:
-                if minelevation > minelev
+                if minelevation > minelev:
                     minelevation = minelev
-                if maxelevation < maxelev
+                if maxelevation < maxelev:
                     maxelevation = maxelev
             # Update the progress bar
             if fcount > 0:
