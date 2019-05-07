@@ -34,7 +34,7 @@ from PyQt5.QtCore import QCoreApplication, QVariant
 from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
                        QgsProcessingAlgorithm,
-                       #QgsProcessingUtils,
+                       # QgsProcessingUtils,
                        QgsProcessingParameterFeatureSource,
                        QgsProcessingParameterFeatureSink,
                        QgsProcessingParameterRasterLayer,
@@ -96,7 +96,6 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                 return [True, 'OK']
         else:
             return [True, 'OK']
-
 
     def initAlgorithm(self, config):
         """
@@ -260,17 +259,16 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         features = layerwithz.getFeatures()
         totalclimb = 0
         totaldescent = 0
-        minelevation = 0
-        maxelevation = 0
-        firstfeature = True
+        minelevation = float('Infinity')
+        maxelevation = float('-Infinity')
         for current, feature in enumerate(features):
             # Stop the algorithm if cancelled
             if feedback.isCanceled():
                 break
             climb = 0
             descent = 0
-            minelev = 0
-            maxelev = 0
+            minelev = float('Infinity')
+            maxelev = float('-Infinity')
             # In case of multigeometries we need to do the parts
             for part in feature.geometry().constParts():
                 # Calculate the climb
@@ -311,18 +309,14 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                         attrindex == descentindex):
                     outattrs.append(attr)
                 attrindex = attrindex + 1
-            #feature.setAttributes(outattrs + [climb, descent])
-            feature.setAttributes(outattrs + [climb, descent, minelev, maxelev])
+            # feature.setAttributes(outattrs + [climb, descent])
+            feature.setAttributes(outattrs +
+                                  [climb, descent, minelev, maxelev])
             # Add a feature to the sink
             sink.addFeature(feature, QgsFeatureSink.FastInsert)
-            if firstfeature:
-                minelevation = minelev
-                maxelevation = maxelev
-                firstfeature = False
-            else:
-                if minelevation > minelev:
+            if minelevation > minelev:
                     minelevation = minelev
-                if maxelevation < maxelev:
+            if maxelevation < maxelev:
                     maxelevation = maxelev
             # Update the progress bar
             if fcount > 0:
@@ -351,7 +345,7 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                "and extra fields (<i>minelev</i> and <i>maxelev</i>) "
                "that shall contain the minimum and maximum elevation "
                "of each line geometry."
-               "If these fields exist in the input layer the "
+               "If these fields exist in the input layer, the "
                "original fields will be removed.<br>"
                "The layer totals are returned in the TOTALCLIMB, "
                "TOTALDESCENT, MINELEVATION and MAXELEVATION output "

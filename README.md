@@ -29,4 +29,10 @@ The algorithm is placed under <i>Climb-> Vector analysis</i> in the
     <dt>TOTALDESCENT</dt>
     <dd><b>Output</b> parameter that contains the total descent for
         all the lines of the input layer.</dd>
+    <dt>MINELEVATION</dt>
+    <dd><b>Output</b> parameter that contains the minimum elevation for
+        all the lines of the input layer.</dd>
+    <dt>MAXELEVATION</dt>
+    <dd><b>Output</b> parameter that contains the maximum elevation for
+        all the lines of the input layer.</dd>
 </dl>

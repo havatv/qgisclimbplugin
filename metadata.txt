@@ -3,16 +3,18 @@
 name=Climb
 qgisMinimumVersion=3.4
 description=Calculate climb and descent for a line dataset.
-version=1.0.3
+version=1.1
 author=Håvard Tveite, NMBU
 email=havard.tveite@nmbu.no
-about=Processing algorithm that returns an output line layer containing the total climb and descent for each polyline of the input line dataset based on the Z values of the points making up the lines.  The Z values for the points can be taken from a user specified DEM (requires QGIS >= 3.4.5).  The grand total climb and descent for all the lines in the input dataset are also provided as output parameters.
+about=Processing algorithm that returns an output line layer containing the total climb and descent as well as the minimum and maximum elevation for each polyline of the input line dataset based on the Z values of the points making up the lines.  The Z values for the points can be taken from a user specified DEM (requires QGIS >= 3.4.5).  The grand total climb and descent, as well as the global minimum and maximum elevation for all the lines in the input dataset are provided as output parameters.
 tracker=https://github.com/havatv/qgisclimbplugin/issues
 repository=https://github.com/havatv/qgisclimbplugin
 # End of mandatory metadata
 
 # Recommended items:
-changelog=1.0.3 (2019-03)
+changelog=1.1 (2019-05)
+    - Add minimum and maximum elevation output (#4)
+    1.0.3 (2019-03)
     - Add declaration of the numeric output parameters
     1.0.2 (2019-03)
     - Avoid hiding qgis Python algorithms (#3)
