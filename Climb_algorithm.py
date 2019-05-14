@@ -34,15 +34,12 @@ from PyQt5.QtCore import QCoreApplication, QVariant
 from qgis.core import (QgsProcessing,
                        QgsFeatureSink,
                        QgsProcessingAlgorithm,
-                       # QgsProcessingUtils,
                        QgsProcessingParameterFeatureSource,
                        QgsProcessingParameterFeatureSink,
                        QgsProcessingParameterRasterLayer,
                        QgsProcessingParameterBand,
                        QgsProcessingOutputNumber,
                        QgsWkbTypes,
-                       # QgsProcessingException,
-                       # QgsVectorLayer,
                        QgsFields,
                        QgsField)
 from qgis.utils import Qgis
@@ -207,7 +204,8 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
             else:
                 thefields.append(field)
             fieldnumber = fieldnumber + 1
-        # Create new fields for climb and descent
+        # Create new fields for climb, descent, minimum elevation
+        # and maximum elevation
         thefields.append(QgsField(self.CLIMBATTRIBUTE, QVariant.Double))
         thefields.append(QgsField(self.DESCENTATTRIBUTE, QVariant.Double))
         thefields.append(QgsField(self.MINELEVATTRIBUTE, QVariant.Double))
@@ -219,9 +217,9 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
             demband = self.parameterAsString(parameters,
                                              self.BANDDEM,
                                              context)
-            feedback.pushInfo("Adding Z values from DEM...")
+            feedback.pushInfo("Adding Z values from DEM using " +
+                              "Drape (setzfromraster) ...")
             # Add the z values
-            # if Qgis.QGIS_VERSION_INT >= 30505:  # is_child_algorithm
             withz = processing.run("native:setzfromraster",
                                  {"INPUT": parameters[self.INPUT],
                                   "RASTER": demraster,
@@ -230,20 +228,8 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
                                  context=context,
                                  feedback=feedback,
                                  is_child_algorithm=True)["OUTPUT"]
-            # else:
-            #     withz = processing.run("native:setzfromraster",
-            #                      {"INPUT": parameters[self.INPUT],
-            #                       "RASTER": demraster,
-            #                       "BAND": demband,
-            #                       "OUTPUT": "memory:"},
-            #                      context=context,
-            #                      feedback=feedback,
-            #                      ......... )["OUTPUT"]
-
             feedback.pushInfo("Z values added.")
             layerwithz = context.temporaryLayerStore().mapLayer(withz)
-            # layerwithz = QgsProcessingUtils.mapLayerFromString(
-            #                                         withz, context)
         else:
             layerwithz = source
         # Retrieve the feature sink. The 'dest_id' variable is used
@@ -380,7 +366,6 @@ class ClimbAlgorithm(QgsProcessingAlgorithm):
         Group id should contain lowercase alphanumeric characters
         only and no spaces or other formatting characters.
         """
-        # return 'Climb'
         return 'vectoranalysis'
 
     def tr(self, string):
